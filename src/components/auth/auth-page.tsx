@@ -47,7 +47,7 @@ export function AuthPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/v1/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
