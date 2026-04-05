@@ -1,8 +1,5 @@
-import https from 'https'
-import http from 'http'
-
-// Lightweight Supabase REST API client — uses native https, NO global fetch
-// This avoids crashes with Next.js 14 on Node.js 24+
+// Lightweight Supabase REST API client — no SDK dependency
+// Hardcoded fallback so it works even if .env.local is missing
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ussppownncyiniojqlgb.supabase.co'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzc3Bwb3dubmN5aW5pb2pxbGdiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA0NTUxOSwiZXhwIjoyMDkwNjIxNTE5fQ.bYOIaYUGmaUBQKpERJCIjI5nyzg1JZHw09MRdg7UM9A'
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzc3Bwb3dubmN5aW5pb2pxbGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDU1MTksImV4cCI6MjA5MDYyMTUxOX0.9sduDRIfEZjzFdl9cOTS7GWxcM6I_iXDf2UumH-dVbg'
@@ -19,45 +16,6 @@ interface QueryOptions {
   headers?: Record<string, string>
 }
 
-function nativeFetch(urlStr: string, options: {
-  method: string
-  headers: Record<string, string>
-  body?: string
-}): Promise<{ status: number; ok: boolean; data: string }> {
-  return new Promise((resolve, reject) => {
-    const parsed = new URL(urlStr)
-    const isHttps = parsed.protocol === 'https:'
-    const lib = isHttps ? https : http
-    const reqBody = options.body || undefined
-
-    const reqOptions: https.RequestOptions = {
-      hostname: parsed.hostname,
-      port: parsed.port || (isHttps ? 443 : 80),
-      path: parsed.pathname + parsed.search,
-      method: options.method,
-      headers: options.headers,
-    }
-
-    const req = lib.request(reqOptions, (res) => {
-      let data = ''
-      res.on('data', (chunk: Buffer) => { data += chunk.toString() })
-      res.on('end', () => {
-        resolve({
-          status: res.statusCode || 0,
-          ok: (res.statusCode || 0) >= 200 && (res.statusCode || 0) < 300,
-          data,
-        })
-      })
-    })
-
-    req.on('error', (err: Error) => reject(err))
-    req.setTimeout(30000, () => { req.destroy(new Error('Request timeout')) })
-
-    if (reqBody) req.write(reqBody)
-    req.end()
-  })
-}
-
 export async function supaQuery<T = any>(opts: QueryOptions): Promise<{ data: T | null; error: { message: string; code?: string } | null }> {
   const { table, select = '*', filter, filterParams = {}, limit, order, body, method = 'GET', headers = {} } = opts
 
@@ -66,13 +24,12 @@ export async function supaQuery<T = any>(opts: QueryOptions): Promise<{ data: T 
   for (const [key, value] of Object.entries(filterParams)) {
     url += `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`
   }
-
   if (filter) url += `&${encodeURIComponent(filter)}`
   if (limit) url += `&limit=${limit}`
   if (order) url += `&order=${encodeURIComponent(order)}`
 
   try {
-    const res = await nativeFetch(url, {
+    const res = await fetch(url, {
       method,
       headers: {
         'apikey': SERVICE_KEY,
@@ -85,31 +42,19 @@ export async function supaQuery<T = any>(opts: QueryOptions): Promise<{ data: T 
     })
 
     if (!res.ok) {
-      let errBody: any
-      try { errBody = JSON.parse(res.data) } catch { errBody = { message: res.data || 'Unknown error' } }
-      return {
-        data: null,
-        error: {
-          message: errBody.message || errBody.msg || `HTTP ${res.status}`,
-          code: String(res.status),
-        },
-      }
+      const errBody = await res.json().catch(() => ({ message: res.statusText }))
+      return { data: null, error: { message: errBody.message || errBody.msg || res.statusText, code: String(res.status) } }
     }
 
     if (method === 'DELETE' || method === 'PATCH') {
-      const data = res.data ? JSON.parse(res.data) : null
-      return { data, error: null }
+      const text = await res.text()
+      return { data: text ? JSON.parse(text) : null, error: null }
     }
 
-    const data = JSON.parse(res.data)
+    const data = await res.json()
     return { data, error: null }
   } catch (err) {
-    return {
-      data: null,
-      error: {
-        message: err instanceof Error ? err.message : String(err),
-      },
-    }
+    return { data: null, error: { message: err instanceof Error ? err.message : String(err) } }
   }
 }
 
