@@ -76,4 +76,69 @@ export function generateId(): string {
   return crypto.randomUUID()
 }
 
+// Node 24 compatible query using https.request (fetch() crashes Next.js 14 on Node 24)
+export async function supaQueryHttps<T = any>(opts: QueryOptions): Promise<{ data: T | null; error: { message: string; code?: string } | null }> {
+  const https = await import('https')
+  const { table, select = '*', filter, filterParams = {}, limit, order, body, method = 'GET', headers = {} } = opts
+
+  let urlStr = `${SUPABASE_URL}/rest/v1/${table}?select=${encodeURIComponent(select)}`
+  for (const [key, value] of Object.entries(filterParams)) {
+    urlStr += `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+  }
+  if (filter) urlStr += `&${encodeURIComponent(filter)}`
+  if (limit) urlStr += `&limit=${limit}`
+  if (order) urlStr += `&order=${encodeURIComponent(order)}`
+
+  const parsedUrl = new URL(urlStr)
+
+  const defaultHeaders: Record<string, string> = {
+    'apikey': SERVICE_KEY,
+    'Authorization': `Bearer ${SERVICE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': method === 'POST' ? 'return=representation' : 'count=exact',
+    ...headers,
+  }
+
+  return new Promise((resolve) => {
+    const reqOptions: https.RequestOptions = {
+      hostname: parsedUrl.hostname,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method,
+      headers: defaultHeaders,
+    }
+
+    const req = https.request(reqOptions, (res) => {
+      const chunks: Buffer[] = []
+      res.on('data', (chunk: Buffer) => chunks.push(chunk))
+      res.on('end', () => {
+        const bodyStr = Buffer.concat(chunks).toString()
+        if (res.statusCode && res.statusCode >= 400) {
+          try {
+            const errBody = JSON.parse(bodyStr)
+            resolve({ data: null, error: { message: errBody.message || errBody.msg || `HTTP ${res.statusCode}`, code: String(res.statusCode) } })
+          } catch {
+            resolve({ data: null, error: { message: `HTTP ${res.statusCode}`, code: String(res.statusCode) } })
+          }
+          return
+        }
+        try {
+          const data = bodyStr ? JSON.parse(bodyStr) : null
+          resolve({ data, error: null })
+        } catch {
+          resolve({ data: null, error: { message: 'Invalid JSON response' } })
+        }
+      })
+    })
+
+    req.on('error', (err) => {
+      resolve({ data: null, error: { message: err.message } })
+    })
+
+    if (body && (method === 'POST' || method === 'PATCH')) {
+      req.write(JSON.stringify(body))
+    }
+    req.end()
+  })
+}
+
 export { ANON_KEY }

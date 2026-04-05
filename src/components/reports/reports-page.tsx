@@ -10,8 +10,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
-import { BarChart3, Clock, TrendingUp, Calendar, ArrowLeftRight } from 'lucide-react';
+import { BarChart3, Clock, TrendingUp, Calendar, ArrowLeftRight, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { ExportPdfButton } from '@/components/export/export-pdf-dialog';
 
 export function ReportsPage() {
   const user = useAppStore((s) => s.user);
@@ -96,21 +97,24 @@ export function ReportsPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Laporan</h1>
           <p className="text-sm text-slate-500 mt-1">Analisis produktivitas dan utilisasi tim</p>
         </div>
-        <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">Minggu Ini</SelectItem>
-            <SelectItem value="month">Bulan Ini</SelectItem>
-            <SelectItem value="quarter">Kuartal Ini</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          {user?.id && <ExportPdfButton userId={user.id} userName={user.name} />}
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Minggu Ini</SelectItem>
+              <SelectItem value="month">Bulan Ini</SelectItem>
+              <SelectItem value="quarter">Kuartal Ini</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {loading ? (

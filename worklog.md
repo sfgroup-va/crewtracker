@@ -147,3 +147,27 @@ Pattern used: check `res.headers.get('content-type')` includes `application/json
 - `npm run lint` passes with zero new errors (only pre-existing errors in files not modified)
 - Dev server compiles successfully for all modified routes
 - All API routes return 200 responses in dev server logs
+
+---
+Task ID: 11
+Agent: Main
+Task: Add PDF export feature for work hours report with custom date range picker
+
+Work Log:
+- Analyzed user's screenshot showing a dual-month calendar date range picker with preset filters
+- Installed jspdf + jspdf-autotable for server-side PDF generation
+- Created /api/export/pdf endpoint using supaQueryHttps (Node 24 compatible)
+- Created src/lib/pdf-generator.ts with professional PDF layout (header, user info, summary stats, detail table, daily summary, footer)
+- Created src/components/export/export-pdf-dialog.tsx with:
+  - DateRangePicker component: dual calendar, preset sidebar (Today, Yesterday, This Week, Last Week, Past 2 Weeks, This Month, Last Month, This Year), hover range highlighting
+  - ExportPdfButton component: combines date picker + export button
+- Integrated ExportPdfButton into Dashboard (all roles) and Reports page
+- Fixed Node 24 fetch() crash by adding supaQueryHttps() to supabase.ts
+- Build passes (23 routes), PDF generation tested successfully, server stable after multiple requests
+
+Stage Summary:
+- Each crew member can export their own work hours report as PDF
+- Custom date range selection with dual calendar picker and preset options
+- Professional PDF layout with company branding, summary cards, detail table, and daily summary
+- Available from Dashboard and Reports pages for all user roles
+- Node 24 compatibility ensured via supaQueryHttps helper

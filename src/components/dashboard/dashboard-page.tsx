@@ -10,6 +10,7 @@ import {
   Clock, FolderOpen, Users, Timer, TrendingUp, Activity
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { ExportPdfButton } from '@/components/export/export-pdf-dialog';
 
 export function DashboardPage() {
   const user = useAppStore((s) => s.user);
@@ -81,11 +82,16 @@ export function DashboardPage() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Page Title */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          {isCrew ? 'Ringkasan aktivitas kerja Anda' : 'Ringkasan aktivitas tim'}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {isCrew ? 'Ringkasan aktivitas kerja Anda' : 'Ringkasan aktivitas tim'}
+          </p>
+        </div>
+        {user?.id && (
+          <ExportPdfButton userId={user.id} userName={user.name} />
+        )}
       </div>
 
       {/* Summary Cards */}
