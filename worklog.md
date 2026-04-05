@@ -171,3 +171,25 @@ Stage Summary:
 - Professional PDF layout with company branding, summary cards, detail table, and daily summary
 - Available from Dashboard and Reports pages for all user roles
 - Node 24 compatibility ensured via supaQueryHttps helper
+
+---
+Task ID: 12
+Agent: Main
+Task: Fix PDF layout — increase spacing between PERIODE, TOTAL JAM, ENTRI sections
+
+Work Log:
+- Redesigned PDF layout from cramped single-card design to separate full-width cards
+- Each section (User Info, Periode, Total Jam, Entri) now has its own card with dedicated spacing
+- User info card: compact with name, email, division
+- Periode card: slate-100 bg with accent bar, large period text
+- Total Jam card: blue-50 bg with blue accent, large hours display + sub stats (avg/hari, billable) on right
+- Entri card: emerald-50 bg with emerald accent, large entry count + sub stats (hari aktif, periode) on right
+- Each card separated by 6mm vertical gap (24mm total spread vs previous cramped 2mm)
+- Added color-coded accent bars on left side of each info card
+- Increased card width to full content width for better readability
+- Verified: PDF generates correctly, server stable after request
+
+Stage Summary:
+- PDF layout now has clear visual separation between PERIODE, TOTAL JAM, and ENTRI
+- Each section is a distinct card with unique background color and accent bar
+- Sub-information displayed on the right side of Total Jam and Entri cards
