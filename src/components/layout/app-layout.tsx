@@ -54,7 +54,7 @@ const NAV_ITEMS = [
   { id: 'tasks', label: 'Tugas', icon: ClipboardList, roles: ['ADMIN', 'CAPTAIN', 'CREW'] },
   { id: 'team', label: 'Tim', icon: Users, roles: ['ADMIN', 'CAPTAIN'] },
   { id: 'clients', label: 'Klien', icon: Users, roles: ['ADMIN', 'CAPTAIN'] },
-  { id: 'reports', label: 'Laporan', icon: BarChart3, roles: ['ADMIN', 'CAPTAIN'] },
+  { id: 'reports', label: 'Laporan', icon: BarChart3, roles: ['ADMIN', 'CAPTAIN', 'CREW'] },
   { id: 'divisions', label: 'Divisi', icon: Settings, roles: ['ADMIN'] },
 ];
 

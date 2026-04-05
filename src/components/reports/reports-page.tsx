@@ -93,14 +93,24 @@ export function ReportsPage() {
     null
   );
 
+  const isCrew = user?.role === 'CREW';
+  const isCaptain = user?.role === 'CAPTAIN';
   const rangeLabel = dateRange === 'week' ? 'Minggu Ini' : dateRange === 'month' ? 'Bulan Ini' : 'Kuartal Ini';
+
+  // Page title and description based on role
+  const pageTitle = isCrew ? 'Laporan Saya' : isCaptain ? 'Laporan Divisi' : 'Laporan';
+  const pageDesc = isCrew
+    ? 'Ringkasan jam kerja dan produktivitas Anda'
+    : isCaptain
+    ? 'Analisis produktivitas dan utilisasi divisi'
+    : 'Analisis produktivitas dan utilisasi tim';
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Laporan</h1>
-          <p className="text-sm text-slate-500 mt-1">Analisis produktivitas dan utilisasi tim</p>
+          <h1 className="text-2xl font-bold text-slate-900">{pageTitle}</h1>
+          <p className="text-sm text-slate-500 mt-1">{pageDesc}</p>
         </div>
         <div className="flex items-center gap-2">
           {user?.id && <ExportPdfButton userId={user.id} userName={user.name} />}
@@ -226,7 +236,8 @@ export function ReportsPage() {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Crew Productivity */}
+            {/* Crew Productivity — hide for CREW (only shows their own data, redundant with trend) */}
+            {!isCrew && (
             <Card className="border shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-semibold text-slate-900">Produktivitas Tim</CardTitle>
@@ -264,9 +275,10 @@ export function ReportsPage() {
                 )}
               </CardContent>
             </Card>
+            )}
 
             {/* Client Utilization */}
-            <Card className="border shadow-sm">
+            <Card className={`border shadow-sm ${isCrew ? 'lg:col-span-2' : ''}`}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-semibold text-slate-900">Utilisasi Klien</CardTitle>
               </CardHeader>
