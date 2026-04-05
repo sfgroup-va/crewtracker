@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  password      String
+  name          String
+  role          String      @default("CREW") // ADMIN, CAPTAIN, CREW
+  avatar        String?
+  divisionId    String?
+  division      Division?   @relation("DivisionMembers", fields: [divisionId], references: [id], onDelete: SetNull)
+  captainOf     Division?   @relation("CaptainOfDivision")
+  assignedTasks Task[]      @relation("CrewTasks")
+  timeEntries   TimeEntry[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Division {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#6366f1")
+  captainId String   @unique
+  captain   User     @relation("CaptainOfDivision", fields: [captainId], references: [id])
+  members   User[]   @relation("DivisionMembers")
+  clients   Client[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  divisionId   String
+  division     Division @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  monthlyHours Int      @default(160)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tasks        Task[]
+}
+
+model Task {
+  id             String       @id @default(cuid())
+  title          String
+  description    String?
+  clientId       String
+  client         Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  crewId         String?
+  crew           User?        @relation("CrewTasks", fields: [crewId], references: [id], onDelete: SetNull)
+  estimatedHours Float?
+  status         String       @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  priority       String       @default("MEDIUM")  // LOW, MEDIUM, HIGH, URGENT
+  dueDate        DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  timeEntries    TimeEntry[]
+}
+
+model TimeEntry {
+  id        String    @id @default(cuid())
+  taskId    String
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  crewId    String
+  crew      User      @relation(fields: [crewId], references: [id])
+  clientId  String
+  startTime DateTime
+  endTime   DateTime?
+  duration  Float?    // in hours
+  note      String?
+  createdAt DateTime  @default(now())
+}
