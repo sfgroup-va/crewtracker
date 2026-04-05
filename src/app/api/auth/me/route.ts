@@ -10,9 +10,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token is required' }, { status: 400 })
     }
 
+    // Plain select — no embedded relations to avoid "more than one relationship" errors
     const { data: users, error } = await supaQuery({
       table: 'users',
-      select: `id, name, email, role, avatar, division_id, created_at, updated_at, division:divisions(id, name, color, captain_id)`,
+      select: 'id, name, email, role, avatar, division_id, created_at, updated_at',
       filterParams: { id: `eq.${token}` },
       limit: 1,
     })
@@ -28,7 +29,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ user: users[0] })
+    // Fetch division separately if user has one
+    const user = users[0]
+    if (user.division_id) {
+      const { data: divisions } = await supaQuery({
+        table: 'divisions',
+        select: 'id, name, color, captain_id',
+        filterParams: { id: `eq.${user.division_id}` },
+        limit: 1,
+      })
+      if (divisions && divisions.length > 0) {
+        user.division = divisions[0]
+      }
+    }
+
+    return NextResponse.json({ user })
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: errMsg }, { status: 500 })

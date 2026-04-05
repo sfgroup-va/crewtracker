@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // output: "standalone", // Disabled for dev - standalone removes BUILD_ID needed by next start
   typescript: {
     ignoreBuildErrors: true,
   },
