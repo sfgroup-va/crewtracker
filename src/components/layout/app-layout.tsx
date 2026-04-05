@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 // pathname not used — removed unused import
 import dynamic from 'next/dynamic';
@@ -157,33 +157,9 @@ export function AppLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const mountedRef = useRef(false);
-
-  // Validate token on mount (once)
-  useEffect(() => {
-    if (mountedRef.current) return;
-    mountedRef.current = true;
-    const validateToken = async () => {
-      const currentToken = useAppStore.getState().token;
-      if (!currentToken) return;
-      try {
-        const res = await fetch(`/api/auth/me?token=${currentToken}`);
-        const contentType = res.headers.get('content-type') || '';
-        if (!contentType.includes('application/json')) {
-          useAppStore.getState().logout();
-          toast.error('Sesi telah berakhir, silakan masuk kembali');
-          return;
-        }
-        if (!res.ok) {
-          useAppStore.getState().logout();
-          toast.error('Sesi telah berakhir, silakan masuk kembali');
-        }
-      } catch {
-        // ignore
-      }
-    };
-    validateToken();
-  }, []);
+  // NOTE: Token validation removed — login already validates credentials.
+  // Server has memory constraints and may temporarily return non-JSON on OOM restart,
+  // which would falsely trigger logout. Trust the persisted session instead.
 
   // Fetch active timer on mount and every 30s
   useEffect(() => {
