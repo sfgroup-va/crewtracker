@@ -29,7 +29,24 @@ export async function GET(request: NextRequest) {
 
     if (error) return handleTableError(error)
 
-    return NextResponse.json({ users: data || [] })
+    // Fetch division info for users who have division_id
+    const divisionIds = [...new Set((data || []).map((u: any) => u.division_id).filter(Boolean))]
+    let divisionMap = new Map<string, any>()
+    if (divisionIds.length > 0) {
+      const { data: divs } = await supaQuery({
+        table: 'divisions',
+        select: 'id, name, color',
+        filter: `id=in.(${divisionIds.join(',')})`,
+      })
+      divisionMap = new Map((divs || []).map((d: any) => [d.id, d]))
+    }
+
+    const enriched = (data || []).map((u: any) => ({
+      ...u,
+      division: u.division_id ? divisionMap.get(u.division_id) || null : null,
+    }))
+
+    return NextResponse.json({ users: enriched })
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: errMsg }, { status: 500 })
@@ -79,7 +96,43 @@ export async function POST(request: NextRequest) {
 
     if (error) return handleTableError(error)
 
-    return NextResponse.json({ user: data && data.length > 0 ? data[0] : null }, { status: 201 })
+    const newUser = data && data.length > 0 ? data[0] : null
+
+    // If role is CAPTAIN and a division_id is specified,
+    // assign as captain of that division
+    if (userRole === 'CAPTAIN' && division_id && newUser) {
+      // Check if division already has a captain
+      const { data: existingDiv } = await supaQuery({
+        table: 'divisions',
+        select: 'id, captain_id',
+        filterParams: { id: `eq.${division_id}` },
+        limit: 1,
+      })
+
+      if (existingDiv && existingDiv.length > 0) {
+        const div = existingDiv[0]
+
+        // If the division already has a different captain, clear their division_id
+        if (div.captain_id && div.captain_id !== newUser.id) {
+          await supaQuery({
+            table: 'users',
+            filterParams: { id: `eq.${div.captain_id}` },
+            body: { division_id: null },
+            method: 'PATCH',
+          })
+        }
+
+        // Update the division's captain_id to the new user
+        await supaQuery({
+          table: 'divisions',
+          filterParams: { id: `eq.${division_id}` },
+          body: { captain_id: newUser.id },
+          method: 'PATCH',
+        })
+      }
+    }
+
+    return NextResponse.json({ user: newUser }, { status: 201 })
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: errMsg }, { status: 500 })

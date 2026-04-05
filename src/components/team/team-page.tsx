@@ -18,13 +18,13 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
-import { Plus, Search, Pencil, Trash2, Users, UserPlus } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Users, UserPlus, Crown, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
-  ADMIN: { label: 'Admin', color: 'bg-rose-100 text-rose-700' },
-  CAPTAIN: { label: 'Captain', color: 'bg-amber-100 text-amber-700' },
-  CREW: { label: 'Crew', color: 'bg-blue-100 text-blue-700' },
+const ROLE_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+  ADMIN: { label: 'Admin', color: 'bg-rose-100 text-rose-700', icon: ShieldCheck },
+  CAPTAIN: { label: 'Captain', color: 'bg-amber-100 text-amber-700', icon: Crown },
+  CREW: { label: 'Crew', color: 'bg-blue-100 text-blue-700', icon: Users },
 };
 
 export function TeamPage() {
@@ -73,10 +73,14 @@ export function TeamPage() {
     return matchSearch && matchRole;
   });
 
-  const handleCreate = () => {
+  const openCreateDialog = (preRole: string) => {
     setEditingUser(null);
-    setForm({ name: '', email: '', password: '', role: 'CREW', division_id: '' });
+    setForm({ name: '', email: '', password: '', role: preRole, division_id: '' });
     setDialogOpen(true);
+  };
+
+  const handleCreate = () => {
+    openCreateDialog('CREW');
   };
 
   const handleEdit = (u: any) => {
@@ -147,6 +151,10 @@ export function TeamPage() {
     }
   };
 
+  const selectedRoleConfig = ROLE_CONFIG[form.role] || ROLE_CONFIG.CREW;
+  const selectedDivision = divisions.find((d) => d.id === form.division_id);
+  const showCaptainInfo = form.role === 'CAPTAIN' && form.division_id && !editingUser;
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -154,10 +162,19 @@ export function TeamPage() {
           <h1 className="text-2xl font-bold text-slate-900">Tim</h1>
           <p className="text-sm text-slate-500 mt-1">Kelola anggota tim Anda</p>
         </div>
-        <Button onClick={handleCreate} className="bg-blue-600 hover:bg-blue-700 text-white">
-          <UserPlus className="w-4 h-4 mr-1.5" />
-          Tambah Anggota
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => openCreateDialog('CAPTAIN')} className="bg-amber-500 hover:bg-amber-600 text-white">
+            <Crown className="w-4 h-4 mr-1.5" />
+            Tambah Captain
+          </Button>
+          <Button onClick={() => openCreateDialog('CREW')} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <UserPlus className="w-4 h-4 mr-1.5" />
+            Tambah Crew
+          </Button>
+          <Button onClick={handleCreate} variant="outline" size="icon" className="h-9 w-9">
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -304,14 +321,19 @@ export function TeamPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="text-sm">Peran</Label>
-                <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(ROLE_CONFIG).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(ROLE_CONFIG).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Badge className={`shrink-0 text-[10px] px-2 py-0.5 ${selectedRoleConfig.color}`}>
+                    {selectedRoleConfig.label}
+                  </Badge>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm">Divisi</Label>
@@ -326,6 +348,24 @@ export function TeamPage() {
                 </Select>
               </div>
             </div>
+            {showCaptainInfo && (
+              <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                <Crown className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800">Captain akan otomatis menjadi kapten divisi ini</p>
+                  {selectedDivision && (
+                    <p className="text-xs text-amber-600 mt-0.5">
+                      Divisi &quot;{selectedDivision.name}&quot; akan ditetapkan dengan kapten baru.
+                      {selectedDivision.captain && (
+                        <span className="block mt-0.5">
+                          Kapten sebelumnya ({selectedDivision.captain.name}) akan dilepaskan dari divisi.
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Batal</Button>

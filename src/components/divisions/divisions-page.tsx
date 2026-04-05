@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -15,7 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
-import { Plus, Search, Pencil, Trash2, Settings, Users as UsersIcon, FolderOpen, Building2 } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Settings, Users as UsersIcon, FolderOpen, Building2, Crown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const COLORS = [
@@ -32,6 +31,11 @@ export function DivisionsPage() {
   const [editingDiv, setEditingDiv] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', color: '#3b82f6', captainId: '' });
+
+  // Inline captain creation state
+  const [showNewCaptain, setShowNewCaptain] = useState(false);
+  const [newCaptain, setNewCaptain] = useState({ name: '', email: '', password: '' });
+  const [creatingCaptain, setCreatingCaptain] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -62,6 +66,8 @@ export function DivisionsPage() {
   const handleCreate = () => {
     setEditingDiv(null);
     setForm({ name: '', color: '#3b82f6', captainId: '' });
+    setShowNewCaptain(false);
+    setNewCaptain({ name: '', email: '', password: '' });
     setDialogOpen(true);
   };
 
@@ -72,7 +78,49 @@ export function DivisionsPage() {
       color: div.color || '#3b82f6',
       captainId: div.captain_id || '',
     });
+    setShowNewCaptain(false);
+    setNewCaptain({ name: '', email: '', password: '' });
     setDialogOpen(true);
+  };
+
+  const handleCreateCaptain = async () => {
+    if (!newCaptain.name || !newCaptain.email || !newCaptain.password) {
+      toast.error('Nama, email, dan password wajib diisi');
+      return;
+    }
+    setCreatingCaptain(true);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newCaptain.name,
+          email: newCaptain.email,
+          password: newCaptain.password,
+          role: 'CAPTAIN',
+          division_id: null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Gagal membuat captain');
+
+      const createdUser = json.user;
+      if (createdUser) {
+        // Add to local captains list
+        setCaptains((prev) => [...prev, createdUser]);
+        // Auto-select the new captain
+        setForm((prev) => ({ ...prev, captainId: createdUser.id }));
+        // Reset form
+        setNewCaptain({ name: '', email: '', password: '' });
+        setShowNewCaptain(false);
+        toast.success(`Captain "${createdUser.name}" berhasil dibuat`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal membuat captain';
+      toast.error(msg);
+    } finally {
+      setCreatingCaptain(false);
+    }
   };
 
   const handleSave = async () => {
@@ -123,6 +171,14 @@ export function DivisionsPage() {
       const msg = err instanceof Error ? err.message : 'Gagal menghapus';
       toast.error(msg);
     }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      setShowNewCaptain(false);
+      setNewCaptain({ name: '', email: '', password: '' });
+    }
+    setDialogOpen(open);
   };
 
   return (
@@ -204,7 +260,7 @@ export function DivisionsPage() {
       )}
 
       {/* Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editingDiv ? 'Edit Divisi' : 'Divisi Baru'}</DialogTitle>
@@ -219,14 +275,93 @@ export function DivisionsPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-sm">Kapten</Label>
-              <Select value={form.captainId} onValueChange={(v) => setForm({ ...form, captainId: v })}>
-                <SelectTrigger><SelectValue placeholder="Pilih kapten" /></SelectTrigger>
-                <SelectContent>
-                  {captains.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {!showNewCaptain ? (
+                <div className="space-y-2">
+                  <Select value={form.captainId} onValueChange={(v) => setForm({ ...form, captainId: v })}>
+                    <SelectTrigger><SelectValue placeholder="Pilih kapten" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__new_captain" className="text-amber-600 font-medium">
+                        <span className="flex items-center gap-2">
+                          <Plus className="w-3 h-3" />
+                          Buat Captain Baru
+                        </span>
+                      </SelectItem>
+                      {captains.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-7 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 px-2"
+                    onClick={() => {
+                      setShowNewCaptain(true);
+                      setForm((prev) => ({ ...prev, captainId: '' }));
+                    }}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Buat captain baru langsung
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2.5 p-3 rounded-lg border border-amber-200 bg-amber-50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Crown className="w-4 h-4 text-amber-600" />
+                    <p className="text-sm font-medium text-amber-800">Captain Baru</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Nama captain"
+                      value={newCaptain.name}
+                      onChange={(e) => setNewCaptain((p) => ({ ...p, name: e.target.value }))}
+                      className="h-8 text-sm bg-white"
+                    />
+                    <Input
+                      placeholder="Email captain"
+                      type="email"
+                      value={newCaptain.email}
+                      onChange={(e) => setNewCaptain((p) => ({ ...p, email: e.target.value }))}
+                      className="h-8 text-sm bg-white"
+                    />
+                    <Input
+                      placeholder="Password"
+                      type="password"
+                      value={newCaptain.password}
+                      onChange={(e) => setNewCaptain((p) => ({ ...p, password: e.target.value }))}
+                      className="h-8 text-sm bg-white"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
+                      onClick={handleCreateCaptain}
+                      disabled={creatingCaptain}
+                    >
+                      {creatingCaptain ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : (
+                        <Plus className="w-3 h-3 mr-1" />
+                      )}
+                      Buat & Pilih
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-slate-500"
+                      onClick={() => {
+                        setShowNewCaptain(false);
+                        setNewCaptain({ name: '', email: '', password: '' });
+                      }}
+                    >
+                      Batal
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="text-sm">Warna</Label>
@@ -246,7 +381,7 @@ export function DivisionsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => handleDialogClose(false)}>Batal</Button>
             <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
               {saving ? 'Menyimpan...' : editingDiv ? 'Simpan' : 'Buat'}
             </Button>
