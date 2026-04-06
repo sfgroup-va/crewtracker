@@ -7,7 +7,7 @@
 FROM node:20-alpine AS deps
 RUN apk add --no-cache python3 make g++ curl unzip
 # Install bun directly (corepack doesn't support bun@latest on Node 20)
-RUN curl -fsSL https://bun.sh/install | bash
+RUN curl -fsSL https://bun.sh/install | sh
 ENV PATH="/root/.bun/bin:$PATH"
 WORKDIR /app
 COPY package.json bun.lock ./
