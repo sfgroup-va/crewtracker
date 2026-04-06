@@ -5,32 +5,10 @@ import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Clock, Eye, EyeOff, Zap } from 'lucide-react';
+import { Loader2, Clock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
-const DEMO_ACCOUNTS = [
-  {
-    label: 'Admin',
-    email: 'admin@crewtracker.com',
-    password: 'password123',
-    color: 'bg-blue-600 hover:bg-blue-700',
-    icon: '👑',
-  },
-  {
-    label: 'Captain',
-    email: 'captain1@crewtracker.com',
-    password: 'password123',
-    color: 'bg-amber-600 hover:bg-amber-700',
-    icon: '⭐',
-  },
-  {
-    label: 'Crew',
-    email: 'crew1@crewtracker.com',
-    password: 'password123',
-    color: 'bg-emerald-600 hover:bg-emerald-700',
-    icon: '🔧',
-  },
-];
+
 
 export function AuthPage() {
   const [email, setEmail] = useState('');
@@ -78,12 +56,6 @@ export function AuthPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleLogin(email, password);
-  };
-
-  const handleDemoLogin = (demo: typeof DEMO_ACCOUNTS[0]) => {
-    setEmail(demo.email);
-    setPassword(demo.password);
-    handleLogin(demo.email, demo.password);
   };
 
   return (
@@ -194,30 +166,6 @@ export function AuthPage() {
               )}
             </Button>
           </form>
-
-          {/* Demo Accounts */}
-          <div className="border-t pt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Zap className="w-4 h-4 text-amber-500" />
-              <span className="text-sm font-medium text-slate-700">Akses Cepat Demo</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {DEMO_ACCOUNTS.map((demo) => (
-                <button
-                  key={demo.label}
-                  onClick={() => handleDemoLogin(demo)}
-                  disabled={loading}
-                  className={`${demo.color} text-white rounded-lg px-3 py-2.5 text-sm font-medium transition-colors disabled:opacity-50`}
-                >
-                  <span className="block text-lg mb-0.5">{demo.icon}</span>
-                  {demo.label}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-slate-400 mt-2 text-center">
-              Gunakan akun demo untuk melihat fitur berdasarkan peran
-            </p>
-          </div>
         </div>
       </div>
     </div>
