@@ -193,3 +193,28 @@ Stage Summary:
 - PDF layout now has clear visual separation between PERIODE, TOTAL JAM, and ENTRI
 - Each section is a distinct card with unique background color and accent bar
 - Sub-information displayed on the right side of Total Jam and Entri cards
+
+---
+Task ID: 13
+Agent: Main
+Task: Deploy CrewTracker ke Railway (Free Tier)
+
+Work Log:
+- Updated next.config.js with output: 'standalone' for Docker standalone mode
+- Removed conflicting next.config.ts (not supported by Next.js 14)
+- Removed next.config.mjs
+- Removed dead /api/seed/route.ts (Prisma-based, unused — app uses Supabase REST API)
+- Created optimized Dockerfile with multi-stage build:
+  - Stage 1 (deps): node:20-alpine + build tools for native modules (pg, sharp)
+  - Stage 2 (builder): build Next.js with standalone output
+  - Stage 3 (runner): minimal node:20-alpine, non-root user, healthcheck
+- Created .dockerignore to minimize Docker context size
+- Created .env.example for Railway environment variables reference
+- Verified build: standalone output 59MB, all 23 routes compile successfully
+- Railway compatible: Node 20, listens on PORT env var, non-root user, healthcheck
+
+Stage Summary:
+- Railway deployment configuration is ready
+- Dockerfile optimized for free tier (512MB RAM)
+- Build verified: all routes compile, standalone output generated
+- User needs to: push to GitHub → connect to Railway → set env vars → deploy
