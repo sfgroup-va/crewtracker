@@ -69,5 +69,5 @@ start-server.sh
 Caddyfile
 vercel.json
 worklog.md
-package-lock.json
+bun.lock
 docker-compose.yml

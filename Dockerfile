@@ -5,13 +5,10 @@
 
 # --- Stage 1: Install dependencies ---
 FROM node:20-alpine AS deps
-RUN apk add --no-cache python3 make g++ curl unzip
-# Install bun directly (corepack doesn't support bun@latest on Node 20)
-RUN curl -fsSL https://bun.sh/install | sh
-ENV PATH="/root/.bun/bin:$PATH"
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # --- Stage 2: Build Next.js ---
 FROM deps AS builder
@@ -19,7 +16,7 @@ WORKDIR /app
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-RUN bun run build
+RUN npx next build
 
 # --- Stage 3: Production (minimal, ~150MB) ---
 FROM node:20-alpine AS runner
