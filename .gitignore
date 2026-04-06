@@ -51,3 +51,23 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Project specific
+db/
+download/
+upload/
+agent-ctx/
+examples/
+*.sql
+health-pinger.js
+server-daemon.sh
+serve.sh
+watchdog.sh
+keep-alive.sh
+start.sh
+start-server.sh
+Caddyfile
+vercel.json
+worklog.md
+package-lock.json
+docker-compose.yml
