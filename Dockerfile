@@ -5,8 +5,10 @@
 
 # --- Stage 1: Install dependencies ---
 FROM node:20-alpine AS deps
-RUN apk add --no-cache python3 make g++ && \
-    corepack enable && corepack prepare bun@latest --activate
+RUN apk add --no-cache python3 make g++ curl unzip
+# Install bun directly (corepack doesn't support bun@latest on Node 20)
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:$PATH"
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
